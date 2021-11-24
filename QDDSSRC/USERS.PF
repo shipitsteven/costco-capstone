@@ -1,0 +1,6 @@
+     A                                      UNIQUE
+     A          R USERSFMT
+     A            UID            5  0
+     A            USERNAME      10A
+     A            PASSWORD      10A
+     A          K UID

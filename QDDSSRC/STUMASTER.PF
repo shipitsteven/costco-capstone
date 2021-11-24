@@ -1,0 +1,8 @@
+     A                                      UNIQUE
+     A          R STUDMAFMT
+     A            STUID          5  0
+     A            STUNAME       25A
+     A            STUDADDR      25A
+     A            STUCRSID       5  0
+     A            SEMID          2  0
+     A          K STUID

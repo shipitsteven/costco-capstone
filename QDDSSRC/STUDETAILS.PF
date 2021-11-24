@@ -1,0 +1,7 @@
+     A                                      UNIQUE
+     A          R STUDEFMT
+     A            STUID          5  0
+     A            SUBJECTID      5  0
+     A            MARKS          5  0
+     A          K STUID
+     A          K SUBJECTID
