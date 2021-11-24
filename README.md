@@ -36,6 +36,7 @@
 
 -   `NSTUDNAME` - Both - Character(25)
 -   `NSTUDADDR` - Both - Character(25)
+-   `MSG_NEWSUB` - Output - Character(50)
 
 #### CRSSFL
 
