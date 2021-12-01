@@ -1,0 +1,24 @@
+     A
+     A          R VIEWSFMT                  JFILE(STUMASTER STUDETAILS
+     A                                      SUBMASTER SEMMASTER CORMASTER)
+     A          J                           JOIN(STUMASTER STUDETAILS)
+     A                                      JFLD(STUID STUID)
+     A          J                           JOIN(STUDETAILS SUBMASTER)
+     A                                      JFLD(SUBJECTID SUBJECTID)
+     A          J                           JOIN(STUMASTER SEMMASTER)
+     A                                      JFLD(SEMID SEMID)
+     A          J                           JOIN(STUMASTER CORMASTER)
+     A                                      JFLD(STUCRSID COURSEID)
+     A            STUID                     JREF(STUMASTER)
+     A            STUNAME
+     A            STUCRSID
+     A            COURSENAME
+     A            SEMID                     JREF(STUMASTER)
+     A            SEMESTER
+     A            SUBJECTID                 JREF(STUDETAILS)
+     A            SUBNAME
+     A            MARKS
+     A          K STUID
+     A          K STUCRSID
+     A          K STUNAME
+     A          K SEMID

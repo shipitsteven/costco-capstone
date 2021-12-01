@@ -5,26 +5,40 @@ Ctl-Opt DFTACTGRP(*No) BNDDIR('CAPSTONE');
 /copy QCOPYBOOK,PROTOTYPE
 
 // Global variables
+// --- login ---
+Dcl-Ds currentCourse LikeDs(Course_t);
 Dcl-S loggedIn ind inz(*Off);
 Dcl-S foundID packed(5:0) inz(-1);
+Dcl-S confirmExit ind inz(*Off);
+
+// --- add subject ---
+Dcl-Ds currentSubject LikeDs(Subject_t);
 Dcl-S foundSubject packed(5:0) inz(-1);
 Dcl-S newSubjectID packed(5:0);
-Dcl-Ds currentSubject LikeDs(Subject_t);
+
+// --- add course ---
 Dcl-S currentCourseId Like(Course_t.id);
 Dcl-S newCourseSemCombo ind inz(*Off);
-Dcl-S foundSemId packed(2:0);
+Dcl-S foundSemId Like(Semester_t.id);
 Dcl-S opSuccessful ind inz(*Off);
 Dcl-S selectedSub ind inz(*Off);
 Dcl-S subjectCounter packed(5:0) inz(0);
 Dcl-S firstSubjIdCache Like(Subject_t.id);
 Dcl-S addOrUpdate char(10);
 
+// --- add student ---
+Dcl-S foundStuId Like(Student_t.id);
+Dcl-S selectedCrs packed(5:0) inz(0);
+Dcl-S selectedCrsId Like(Course_t.id);
+Dcl-S addSuccessful ind inz(*Off);
+Dcl-S lastStuId Like(Student_t.id);
+
+// --- student detail ---
+Dcl-DS foundStudent LikeDS(ViewStud_t);
+
 
 // Main program starts here
 DOU indicators.exit = *ON AND loggedIn = *Off;
-  Write Header;
-  Write Footer_M;
-  Exfmt LOGIN;
   EXSR $LoginSR;
 ENDDO;
 
@@ -35,11 +49,17 @@ ENDDO;
 // ***************
 
 BegSr $LoginSR;
+  Write Header;
+  Write Footer_M;
+  Exfmt LOGIN;
   IF indicators.refresh = *ON;
     clear MSG_LOGIN;
     clear USRNAME;
     clear USRPWD;
     MSG_LOGIN = 'Page refreshed';
+  ELSEIF indicators.exit = *ON;
+    loggedIn = *Off;
+    *INLR = *ON;
   ELSE;
     IF ( %TRIM(USRNAME) = ' ' OR %TRIm(USRPWD) = ' ' );
       MSG_LOGIN = 'User name and/or password cannot be empty';
@@ -51,6 +71,8 @@ BegSr $LoginSR;
         Chain foundID Users;
         If Password = USRPWD;
           loggedIn = *On;
+          Clear USRNAME;
+          Clear USRPWD;
           Exsr $SelectTable;
         Else;
           MSG_LOGIN = 'Wrong password!';
@@ -83,17 +105,15 @@ BegSr $SelectTable;
         WHEN (OPT_NEWCRS = '1' AND OPT_NEWSUB = ' ' AND OPT_NEWSTU = ' ' AND OPT_VIEWST = ' ');
           Exsr $NewCrsOpt;
         WHEN (OPT_NEWSTU = '1' AND OPT_NEWSUB = ' ' AND OPT_NEWCRS = ' ' AND OPT_VIEWST = ' ');
-//          Exsr $NewStuOpt;
+          Exsr $NewStuOpt;
         WHEN (OPT_VIEWST = '1' AND OPT_NEWCRS = ' ' AND OPT_NEWSTU = ' ' AND OPT_NEWSUB = ' ');
-//          Exsr $ViewStuOpt;
+          Exsr $ViewStuOpt;
         OTHER;
           MSG_Menu = 'Invalid option';
       ENDSL;
     ENDIF;
   ENDDO;
   MSG_LOGIN = 'Logged out, you can log in again now';
-  Exfmt LOGIN;
-  loggedIn = *Off;
 ENDSR;
 
 //***********************************************************
@@ -161,6 +181,8 @@ BegSr $NewCrsOpt;
       LeaveSr;
     ELSEIF indicators.refresh = *ON;
       Exsr $Load_Subject_SFL;
+      Clear CRSNAME;
+      Clear SEMESTER;
       MSG_NEWCRS = 'Page refreshed, fields cleared';
     ELSEIF indicators.save = *ON;
       IF CRSNAME = ' ';
@@ -289,10 +311,125 @@ BegSr $Load_Subject_SFL;
       SubRRN += 1;
       SUB_ID = currentSubject.id;
       SUB_NAME = currentSubject.name;
-      OPT_SUB = '';
       Write SUBSFL;
       currentSubject = Subject_FetchNext();
     ENDDO;
     Subject_Close();
   ENDIF;
+ENDSR;
+
+// **********************
+// New Student
+// **********************
+BegSr $NewStuOpt;
+   Exsr $Load_Course_SFL;
+   DOW indicators.exit = *OFF;
+      Write Header;
+      Write Footer_Add;
+      Exfmt CRSCTL;
+      IF indicators.back = *ON;
+        Clear NSTUDNAME;
+        Clear NSTUDADDR;
+        Clear CRSCTL;
+        LeaveSr;
+      ELSEIF indicators.refresh = *ON;
+        Exsr $Load_Course_SFL;
+        Clear NSTUDNAME;
+        Clear NSTUDADDR;
+        Clear CRSCTL;
+        MSG_NEWSTU = 'Page refreshed, fields cleared';
+      ELSEIF indicators.save = *ON;
+         IF NSTUDNAME = ' ' OR NSTUDADDR = ' ';
+           MSG_NEWSTU = 'Student name or address cannot be empty';
+         ELSE;
+           // check for existing student
+          foundStuId = is_new_student(NSTUDNAME);
+          IF foundStuId <> -1;
+            MSG_NEWSTU = 'Student already exist. Their ID is ' + %CHAR(foundStuId);
+          ELSE;
+            // make sure only one option is selected
+            selectedCrs = 0;
+            READC CRSSFL;
+            DOW NOT %EOF;
+              IF OPT_CRS = '1';
+                selectedCrs += 1;
+              ENDIF;
+              READC CRSSFL;
+            ENDDO;
+            // Selected multiple courses, invalid input
+            IF selectedCrs > 1;
+               Exsr $Load_Course_SFL;
+               MSG_NEWSTU = 'Please select ONLY ONE course. You selected ' + %CHAR(selectedCrs)
+              + ' courses';
+            ELSEIF selectedCrs = 0;
+               MSG_NEWSTU = 'Please select a course for the new student';
+            ELSE;
+              // add new student with selected course
+              lastStuId = get_last_stuId();
+              IF lastStuId = -1;
+                lastStuId = 1;
+              Else;
+               lastStuId += 1;
+              ENDIF;
+              addSuccessful = *Off;
+              addSuccessful = add_new_student(lastStuId:NSTUDNAME:NSTUDADDR:CRS_ID);
+              Exsr $Load_Course_SFL;
+              MSG_NEWSTU = 'Student ID.' + %CHAR(lastStuId) + ' ' + %TRIM(NSTUDNAME)
+              + ' successfully enrolled in ' + %TRIM(CRS_NAME);
+            ENDIF;
+          ENDIF;
+         ENDIF;
+      ELSE;
+      ENDIF;
+   ENDDO;
+   // BUG: Pressing F3 still shows subfile on Login page
+ENDSR;
+
+
+// **********************
+// Load Course Subfile
+// **********************
+BegSr $Load_Course_SFL;
+  indicators.subCrsClear = *Off;
+  Write CRSCTL;
+  CrsRRN = 0;
+  indicators.subCrsClear = *On;
+
+  IF Course_Open();
+    currentCourse = Course_FetchNext();
+    DOW Course_IsOk();
+      CrsRRN += 1;
+      CRS_ID = currentCourse.id;
+      CRS_NAME = currentCourse.name;
+      Write CrsSFL;
+      currentCourse = Course_FetchNext();
+    ENDDO;
+    Course_Close();
+  ENDIF;
+ENDSR;
+
+// **********************
+// View Student Details
+// **********************
+BegSr $ViewStuOpt;
+   // load empty subfile
+   indicators.subClear = *Off;
+   Write STUDCTL;
+   StudRRN = 0;
+   indicators.subClear = *On;
+   indicators.sflDspData = *Off;
+   MSG_STUDET = 'Enter some search criteria to begin';
+   DOW indicators.exit = *Off;
+     Write Header;
+     Write Footer_Up;
+     Exfmt STUDCTL;
+     foundStudent = find_by_StudentId(ST_INPID);
+     IF foundStudent.id = -1;
+       MSG_STUDET = 'Student doesn''t exist';
+     ELSE;
+       MSG_STUDET = 'Found student name: ' + %TRIM(foundStudent.name);
+     ENDIF;
+   ENDDO;
+
+
 ENDSR;
