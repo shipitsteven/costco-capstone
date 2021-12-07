@@ -1,6 +1,6 @@
 **FREE
 
-Ctl-Opt DFTACTGRP(*No) BNDDIR('CAPSTONE');
+Ctl-Opt DFTACTGRP(*No) ACTGRP(*NEW) BNDDIR('CAPSTONE');
 
 /copy QCOPYBOOK,PROTOTYPE
 
@@ -10,6 +10,7 @@ Dcl-Ds currentCourse LikeDs(Course_t);
 Dcl-S loggedIn ind inz(*Off);
 Dcl-S foundID packed(5:0) inz(-1);
 Dcl-S confirmExit ind inz(*Off);
+dcl-s sessionUser char(10) inz(*user);
 
 // --- add subject ---
 Dcl-Ds currentSubject LikeDs(Subject_t);
@@ -35,7 +36,23 @@ Dcl-S lastStuId Like(Student_t.id);
 
 // --- student detail ---
 Dcl-DS foundStudent LikeDS(ViewStud_t);
-
+Dcl-S searchType CHAR(25);
+Dcl-DS qCourse LikeDS(Course_t);
+Dcl-DS qSemester LikeDS(Semester_t);
+Dcl-S validSemester ind inz(*Off);
+Dcl-S updatingSubId Like(Subject_t.id);
+Dcl-S dupSubject ind inz(*Off);
+Dcl-S inSubCourse ind inz(*Off);
+Dcl-S addCrsId Like(Course_t.id);
+Dcl-S addSemId Like(SEMESTER_t.id);
+Dcl-S updatedSubName Like(Subject_t.name);
+Dcl-S updatedMarks Like(ViewStud_t.Marks);
+Dcl-S updatedSub ind inz(*Off);
+Dcl-S updatedSemId Like(SEMESTER_t.id);
+Dcl-S updatedSem ind inz(*Off);
+Dcl-S updatedSemName Like(Semester_t.term);
+Dcl-S numOfSubjects Packed(5:0);
+Dcl-DS searchParams LikeDS(SearchParams_t);
 
 // Main program starts here
 DOU indicators.exit = *ON AND loggedIn = *Off;
@@ -49,6 +66,7 @@ ENDDO;
 // ***************
 
 BegSr $LoginSR;
+  CURUSER = sessionUser;
   Write Header;
   Write Footer_M;
   Exfmt LOGIN;
@@ -71,14 +89,17 @@ BegSr $LoginSR;
         Chain foundID Users;
         If Password = USRPWD;
           loggedIn = *On;
+          CURUSER = USRNAME;
           Clear USRNAME;
           Clear USRPWD;
           Exsr $SelectTable;
         Else;
           MSG_LOGIN = 'Wrong password!';
+          clear USRPWD;
         EndIf;
       Else;
         MSG_LOGIN = 'User not found.';
+        clear USRPWD;
       EndIf;
     EndIf;
   ENDIF;
@@ -89,9 +110,10 @@ ENDSR;
 //***********************************************************
 BegSr $SelectTable;
   DOW indicators.exit = *OFF;
+    Write Header;
     Write Footer_M;
-    Exfmt MAINMENU;
     Clear MSG_MENU;
+    Exfmt MAINMENU;
     IF indicators.refresh = *ON;
       Clear OPT_NEWSUB;
       Clear OPT_NEWCRS;
@@ -229,13 +251,13 @@ BegSr $NewCrsOpt;
             currentCourseId = 0;
           ENDIF;
           // Check if user actually selected any subjects
+          currentCourseId += 10;
           Exsr $validate_and_add_first_subj;
 
           IF selectedSub = *Off;
             MSG_NEWCRS = 'Please select at least one subject';
           ELSE;
             // insert new course into CorMaster
-            currentCourseId += 10;
             opSuccessful = *Off;
             opSuccessful = add_new_course((currentCourseId):CRSNAME);
 
@@ -382,7 +404,6 @@ BegSr $NewStuOpt;
       ELSE;
       ENDIF;
    ENDDO;
-   // BUG: Pressing F3 still shows subfile on Login page
 ENDSR;
 
 
@@ -413,23 +434,515 @@ ENDSR;
 // **********************
 BegSr $ViewStuOpt;
    // load empty subfile
-   indicators.subClear = *Off;
-   Write STUDCTL;
-   StudRRN = 0;
-   indicators.subClear = *On;
-   indicators.sflDspData = *Off;
-   MSG_STUDET = 'Enter some search criteria to begin';
-   DOW indicators.exit = *Off;
-     Write Header;
-     Write Footer_Up;
-     Exfmt STUDCTL;
-     foundStudent = find_by_StudentId(ST_INPID);
-     IF foundStudent.id = -1;
-       MSG_STUDET = 'Student doesn''t exist';
-     ELSE;
-       MSG_STUDET = 'Found student name: ' + %TRIM(foundStudent.name);
-     ENDIF;
-   ENDDO;
+  MSG_STUDET = 'Enter some search criteria to begin';
+  Exsr $clearSearchSfl;
+  Write Header;
+  Write Footer_Up;
+  Write NORESULT;
 
+  searchParams.StuId = 0;
+  searchParams.StuName = ' ';
+  searchParams.CourseId = 0;
+  searchParams.CourseName = ' ';
+  searchParams.Semester = ' ';
+
+  DOW indicators.exit = *Off;
+    Write NORESULT;
+
+    indicators.sflFold = '0' ; //=2 lines
+    indicators.sflFold = '1' ; //=1 lines
+    Mode = indicators.sflFold;
+    Exfmt STUDCTL; // keep, because it shows the screen
+    indicators.sflFold = Mode;
+
+    IF indicators.back = *ON;
+      Exsr $clearSearchParams;
+      LeaveSr;
+    ELSEIF indicators.refresh = *ON;
+      Exsr $clearSearchParams;
+      Exsr $clearSearchSfl;
+      MSG_STUDET = 'Page refreshed, fields cleared';
+    ELSE;
+
+      IF searchParams.StuId <> St_INPID OR searchParams.StuName <> ST_INPNAM OR
+        searchParams.CourseId <> ST_INPCRS OR searchParams.CourseName <> ST_INPCRSN OR
+        searchParams.Semester <> ST_INPSEM;
+
+        searchType = get_search_type(ST_INPID:ST_INPNAM:ST_INPCRS:ST_INPCRSN:ST_INPSEM);
+        MSG_STUDET = 'Search type: ' + %TRIM(searchType);
+
+        SELECT;
+           When searchType = 'Invalid';
+            MSG_STUDET = 'Invalid search parameters, please input only 1 or all 3 search fields';
+            Exsr $clearSearchSfl;
+           When searchType = 'InvalidStu';
+            MSG_STUDET = 'Invalid search parameters, please only put ID or Name';
+            Exsr $clearSearchSfl;
+           When searchType = 'InvalidCrs';
+            MSG_STUDET = 'Invalid search parameters, please only put ID or Name';
+            Exsr $clearSearchSfl;
+           When searchType = 'StuId';
+            Exsr $searchByStudentId;
+           When searchType = 'StuName';
+            Exsr $searchByStudentName;
+           When searchType = 'CourseId';
+            Exsr $searchByCourseId;
+           When searchType = 'CourseName';
+            Exsr $searchByCourseName;
+           When searchType = 'Semester';
+            Exsr $searchBySemester;
+           When searchType = 'StuId+CrsId+Sem';
+            Exsr $searchByStuIdCrsIdSem;
+           When searchType = 'StuId+CrsName+Sem';
+            Exsr $searchByStuIdCrsNameSem;
+           When searchType = 'StuName+CrsId+Sem';
+            Exsr $searchByStuNameCrsIdSem;
+           When searchType = 'StuName+CrsName+Sem';
+            Exsr $searchByStuNameCrsNameSem;
+           Other;
+            Exsr $clearSearchSfl;
+        ENDSL;
+
+        searchParams.StuId = ST_INPID;
+        searchParams.StuName = ST_INPNAM;
+        searchParams.CourseId = ST_INPCRS;
+        searchParams.CourseName = ST_INPCRSN;
+        searchParams.Semester = ST_INPSEM;
+
+      ELSE;
+        Exsr $StudentSubjectOptions;
+      ENDIF;
+   ENDIF;
+  ENDDO;
+ENDSR;
+
+// **********************
+// Change Semester
+// **********************
+BegSr $ChangeSemester;
+  DOW indicators.exit = *OFF;
+    CS_STID = ST_ID;
+    CS_STNAME = ST_NAME;
+    CS_CRSNAM = ST_CRSNAME;
+    IF updatedSem = *ON;
+      CS_SEMEST = updatedSemName;
+    ELSE;
+      CS_SEMEST = ST_SEMEST;
+    ENDIF;
+    Write Footer_ADD;
+    Exfmt CHGSMST;
+
+    IF indicators.back = *ON;
+      Clear CS_STID;
+      Clear CS_STNAME;
+      Clear CS_CRSNAM;
+      Clear CS_SEMEST;
+      Clear MSG_CHGSEM;
+      Exsr $reloadSearchResult;
+      LeaveSr;
+    ELSEIF indicators.refresh = *ON;
+      IF updatedSem = *ON;
+        CS_SEMEST = updatedSemName;
+      ELSE;
+        CS_SEMEST = ST_SEMEST;
+      ENDIF;
+      MSG_CHGSEM = 'Page refreshed, fields cleared';
+    ELSEIF indicators.save = *ON;
+      updatedSem = *OFF;
+      // is semester valid? is it greater than current semester?
+      validSemester = valid_Semester_by_name(ST_SEMEST:CS_SEMEST);
+      IF validSemester = *ON;
+        updatedSemId = get_SemId(CS_SEMEST);
+        update_Student_semester(CS_STID:updatedSemId);
+        updatedSemName = CS_SEMEST;
+        MSG_CHGSEM = 'Student semester updated to: ' + %TRIM(CS_SEMEST);
+        updatedSem = *ON;
+      Else;
+        MSG_CHGSEM = 'Invalid Semester name or Semester not greater than current semester';
+      ENDIF;
+    ELSE;
+     // nothing
+    ENDIF;
+
+  ENDDO;
+ENDSR;
+
+// **********************
+// Add Subjects for Students
+// **********************
+BegSr $AddSubjectToStudent;
+  DOW indicators.exit = *OFF;
+    DT_STID = ST_ID;
+    DT_STNAME = ST_NAME;
+    DT_CRSNAME = ST_CRSNAME;
+    DT_SEMEST = ST_SEMEST;
+    IF updatedSub = *ON;
+      DT_SUBNAME = updatedSubName;
+      DT_Marks = updatedMarks;
+    ELSE;
+      DT_SUBNAME = ST_SUBJECT;
+      DT_MARKS = ST_MARKS;
+    ENDIF;
+    Write Footer_ADD;
+    Exfmt ADDDETAIL;
+
+    IF indicators.back = *ON;
+      Clear DT_STID;
+      Clear DT_STNAME;
+      Clear DT_CRSNAME;
+      Clear DT_SEMEST;
+      Clear DT_SUBNAME;
+      Clear DT_MARKS;
+      Clear MSG_ADDDET;
+      Exsr $reloadSearchResult;
+      LeaveSr;
+    ELSEIF indicators.refresh = *ON;
+      Clear DT_SUBNAME;
+      Clear DT_MARKS;
+      MSG_ADDDET = 'Page refreshed, fields cleared';
+    ELSEIF indicators.save = *ON;
+      dupSubject = *OFF;
+      inSubCourse = *OFF;
+      // check if subject is in subcourse with matching course id
+      updatingSubId = get_subject_id(DT_SUBNAME);
+      IF updatingSubId = -1;
+        MSG_ADDDET = 'Invalid subject - Subject does not exist';
+        ITER;
+      ENDIF;
+
+      dupSubject = is_duplicate_subject(DT_STID:updatingSubId);
+      IF dupSubject = *ON;
+        update_Marks(DT_STID:updatingSubId:DT_MARKS);
+        updatedSubName = DT_SUBNAME;
+        updatedMarks = DT_Marks;
+        MSG_ADDDET = 'Student already enrolled. Updating Marks to ' + %CHAR(DT_MARKS);
+        ST_MARKS = updatedMarks;
+        updatedSub = *ON;
+      ELSE;
+        updatedSub = *OFF;
+        addCrsId = get_CourseId(DT_CRSNAME);
+        addSemId = get_SemId(DT_SEMEST);
+        inSubCourse = is_subject_in_SubCourse(addCrsId:updatingSubId:addSemId);
+
+        IF inSubCourse = *ON;
+          add_subject_to_StuDetails(DT_STID:updatingSubId:DT_Marks);
+          MSG_ADDDET = 'BINGO! Student added to new subject';
+          updatedSubName = DT_SUBNAME;
+          updatedMarks = DT_Marks;
+          updatedSub = *ON;
+        ELSE;
+          MSG_ADDDET = 'Subject is not in the right Course or Semester';
+        ENDIF;
+      ENDIF;
+    ENDIF;
+  ENDDO;
 
 ENDSR;
+
+BegSr $DeleteSubject;
+   // check if student has more than 1 subject
+   numOfSubjects = has_num_of_subjects(ST_ID);
+   IF numOfSubjects > 1;
+    // TODO: Delete subject from StuDetails
+     delete_subject_from_Studetails(ST_ID:ST_SUBID);
+     Exsr $clearSearchSfl;
+     Exsr $reloadSearchResult;
+     MSG_STUDET = 'Delete subject ID.' + %CHAR(ST_SUBID) + 'from Student ID.' + %CHAR(ST_ID);
+   ELSE;
+    // TODO: Delete subject from StuDetails & student from StuMaster
+     delete_subject_from_Studetails(ST_ID:ST_SUBID);
+     delete_Student_from_Stumaster(ST_ID);
+     Exsr $clearSearchSfl;
+     Exsr $reloadSearchResult;
+     MSG_STUDET = 'Delete Student ID.' + %CHAR(ST_ID);
+   ENDIF;
+ENDSR;
+
+
+BegSr $clearSearchSfl;
+  indicators.subClear = *Off;
+  Write STUDCTL;
+  STUDRRN = 0;
+  indicators.subClear = *On;
+  indicators.sflDspData = *OFF;
+ENDSR;
+
+BegSr $clearSearchParams;
+  Clear STUDCTL;
+  Clear ST_INPID;
+  Clear ST_INPNAM;
+  Clear ST_INPCRS;
+  Clear ST_INPCRSN;
+  Clear ST_INPSEM;
+ENDSR;
+
+BegSr $populateSflFields;
+  StudRRN += 1;
+  OPT_STUD = ' ';
+  ST_ID = foundStudent.StuId;
+  ST_NAME = foundStudent.StuName;
+  ST_CRSID = foundStudent.StuCrsId;
+  ST_ADDR = foundStudent.StuAddr;
+  ST_SEMEST = foundStudent.Semester;
+  ST_SUBID = foundStudent.SubjectID;
+  ST_SUBJECT = foundStudent.SubName;
+  ST_CRSNAME = foundStudent.CourseName;
+  ST_MARKS = foundStudent.Marks;
+  Exsr $DisplaySflAndFold;
+  Write STUDSFL;
+ENDSR;
+
+// testing
+BegSr $DisplaySflAndFold;
+  IF StudRRN > 0;
+    indicators.sflDspData = *ON;
+//    indicators.sflNxtChg = *ON;
+  ENDIF;
+ENDSR;
+
+BegSr $StudentSubjectOptions;
+IF indicators.sflDspData = *ON;
+  READC STUDSFL;
+  IF OPT_STUD = 'A';
+    Exsr $AddSubjectToStudent;
+  ELSEIF OPT_STUD = 'C';
+    Exsr $ChangeSemester;
+  ELSEIF OPT_STUD = 'D';
+    Exsr $DeleteSubject;
+  ELSEIF indicators.save = *ON;
+    update_Marks(ST_ID:ST_SUBID:ST_Marks);
+    MSG_STUDET = 'Marks for Subject ID.' + %TRIM(%CHAR(ST_SUBID)) + ' updated to ' +
+    %TRIM(%CHAR(ST_Marks));
+  ELSEIF indicators.exit = *ON;
+    LeaveSr;
+  ELSE;
+    MSG_STUDET = 'Invalid option. Please enter only A, C, D or use F8 to update Marks';
+  ENDIF;
+ENDIF;
+ENDSR;
+
+BegSr $searchByStudentId;
+  Exsr $clearSearchSfl;
+  foundStudent.StuId = get_student_by_ID(ST_INPID);
+  IF foundStudent.StuId = -1;
+    MSG_STUDET = 'Student with ID ' + %CHAR(ST_INPID) + ' not found';
+  ELSE;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.StuId = ST_INPID;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+//    Exsr $DisplaySflAndFold;
+  ENDIF;
+ENDSR;
+
+BegSr $searchByStudentName;
+  Exsr $clearSearchSfl;
+  foundStudent.StuId = is_new_student(ST_INPNAM);
+  IF foundStudent.StuId = -1;
+    MSG_STUDET = 'Student with name: ' + %TRIM(ST_INPNAM) + ' not found';
+  ELSE;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.StuName = ST_INPNAM;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    Exsr $DisplaySflAndFold;
+  ENDIF;
+ENDSR;
+
+BegSr $searchByCourseId;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.StuCrsId = ST_INPCRS;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'Course does not exist or has no associated students';
+    ENDIF;
+ENDSR;
+
+BegSr $searchByCourseName;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.CourseName = ST_INPCRSN;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'Course does not exist or has no associated students';
+    ENDIF;
+ENDSR;
+
+BegSr $searchBySemester;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.Semester = ST_INPSEM;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'Semester does not exist or has no associated students';
+    ENDIF;
+ENDSR;
+
+BegSr $searchByStuIdCrsIdSem;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuId = ST_INPID
+        AND foundStudent.StuCrsId = ST_INPCRS;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'No students exist with the search parameter combination';
+    ENDIF;
+ENDSR;
+
+BegSr $searchByStuIdCrsNameSem;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuId = ST_INPID
+        AND foundStudent.CourseName = ST_INPCRSN;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'No students exist with the search parameter combination';
+    ENDIF;
+ENDSR;
+
+BegSr $searchByStuNameCrsIdSem;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuName = ST_INPNAM
+        AND foundStudent.StuCrsId = ST_INPCRS;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'No students exist with the search parameter combination';
+    ENDIF;
+ENDSR;
+
+BegSr $searchByStuNameCrsNameSem;
+  Exsr $clearSearchSfl;
+    IF ViewStud_Open();
+    foundStudent = ViewStud_FetchNext();
+    DOW ViewStud_IsOk();
+      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuName = ST_INPNAM
+        AND foundStudent.CourseName = ST_INPCRSN;
+        Exsr $populateSflFields;
+      ENDIF;
+      foundStudent = ViewStud_FetchNext();
+    ENDDO;
+    ViewStud_Close();
+    ENDIF;
+    IF StudRRN <> 0;
+      Exsr $DisplaySflAndFold;
+    ELSE;
+      MSG_STUDET = 'No students exist with the search parameter combination';
+    ENDIF;
+ENDSR;
+
+BegSr $reloadSearchResult;
+    searchType = get_search_type(ST_INPID:ST_INPNAM:ST_INPCRS:ST_INPCRSN:ST_INPSEM);
+
+    SELECT;
+       When searchType = 'Invalid';
+        MSG_STUDET = 'Invalid search parameters, please input only 1 or all 3 search fields';
+        Exsr $clearSearchSfl;
+       When searchType = 'InvalidStu';
+        MSG_STUDET = 'Invalid search parameters, please only put ID or Name';
+        Exsr $clearSearchSfl;
+       When searchType = 'InvalidCrs';
+        MSG_STUDET = 'Invalid search parameters, please only put ID or Name';
+        Exsr $clearSearchSfl;
+       When searchType = 'StuId';
+        Exsr $searchByStudentId;
+       When searchType = 'StuName';
+        Exsr $searchByStudentName;
+       When searchType = 'CourseId';
+        Exsr $searchByCourseId;
+       When searchType = 'CourseName';
+        Exsr $searchByCourseName;
+       When searchType = 'Semester';
+        Exsr $searchBySemester;
+       When searchType = 'StuId+CrsId+Sem';
+        Exsr $searchByStuIdCrsIdSem;
+       When searchType = 'StuId+CrsName+Sem';
+        Exsr $searchByStuIdCrsNameSem;
+       When searchType = 'StuName+CrsId+Sem';
+        Exsr $searchByStuNameCrsIdSem;
+       When searchType = 'StuName+CrsName+Sem';
+        Exsr $searchByStuNameCrsNameSem;
+       Other;
+        Exsr $clearSearchSfl;
+    ENDSL;
+
+    IF updatedSub = *ON;
+       MSG_STUDET = 'Subject related information updated';
+    ELSEIF updatedSem = *ON;
+       MSG_STUDET = 'Student Semester updated';
+    ELSE;
+       MSG_STUDET = 'Welcome back, search type: ' + %TRIM(searchType);
+    ENDIF;
+
+    updatedSub = *OFF;
+    updatedSem = *OFF;
+
+ENDSR;
+

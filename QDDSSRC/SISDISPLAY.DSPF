@@ -3,18 +3,20 @@
      A          R HEADER                    OVERLAY
      A                                  1 27'Student Information System'
      A                                      COLOR(WHT)
-     A                                  1 71TIME
-     A                                      COLOR(BLU)
      A                                  1  3DATE(*SYS *YY)
+     A                                      COLOR(BLU)
+     A                                      EDTWRD('  /  /    ')
+     A            CURUSER       10   O  1 71
+     A                                  1 64'Hello,'
      A                                      COLOR(BLU)
      A          R FOOTER_M                  OVERLAY
      A                                 23 22'F3-Exit'
-     A                                      COLOR(RED)
+     A                                      COLOR(BLU)
      A                                 23 51'F5-REFRESH'
      A                                      COLOR(BLU)
      A          R FOOTER_ADD                OVERLAY
      A                                 23 10'F3-EXIT'
-     A                                      COLOR(RED)
+     A                                      COLOR(BLU)
      A                                 23 26'F5-REFRESH'
      A                                      COLOR(BLU)
      A                                 23 45'F8-ADD'
@@ -22,7 +24,7 @@
      A                                      COLOR(BLU)
      A          R FOOTER_UP                 OVERLAY
      A                                 23  6'F3-EXIT'
-     A                                      COLOR(RED)
+     A                                      COLOR(BLU)
      A                                 23 19'F5-REFRESH'
      A                                      COLOR(BLU)
      A                                 23 35'F8-UPDATE'
@@ -91,7 +93,7 @@
      A                                  8 23'Semester..:'
      A            SEMESTER      10   B  8 35CHECK(LC)
      A                                 11  5'1-Select'
-     A            MSG_NEWCRS    70   B 10  6COLOR(TRQ)
+     A            MSG_NEWCRS    70   O 10  6COLOR(TRQ)
      A          R CRSSFL                    SFL
      A  60                                  SFLNXTCHG
      A            OPT_CRS        1M  I 13  9
@@ -119,27 +121,28 @@
      A                                  8 18'Student Address:..:'
      A            NSTUDADDR     25   B  8 39CHECK(LC)
      A                                 11  5'1-Select'
-     A            MSG_NEWSTU    70   B 10  6COLOR(TRQ)
+     A            MSG_NEWSTU    70   O 10  6COLOR(TRQ)
      A          R STUDSFL                   SFL
-     A            OPT_STUD       1M  B 11  3
-     A            ST_ID          5N 0O 11  5
+     A  60                                  SFLNXTCHG
+     A            OPT_STUD       1   B 11  2
+     A            ST_ID          5N 0O 11  4
      A            ST_NAME       25   O 11 12
      A            ST_CRSID       5N 0O 11 38
      A            ST_SEMEST     10   O 11 45
      A            ST_SUBID       5N 0O 11 60
      A            ST_MARKS       5N 0B 11 71
-     A            ST_ADDR       25   O 13  3
-     A                                 12 12'Address'
+     A            ST_ADDR       25   O 13  4
+     A                                 12  4'Address'
      A                                      COLOR(WHT)
-     A                                 12 39'Subject'
+     A                                 12 30'Subject'
      A                                      COLOR(WHT)
-     A                                 12 62'Course Name'
+     A                                 12 56'Course Name'
      A                                      COLOR(WHT)
-     A            ST_SUBJECT    25   O 13 29
-     A            ST_CRSNAME    25   O 13 55
-     A                                 14  7'\\---------------------------------
+     A            ST_SUBJECT    25   O 13 30
+     A            ST_CRSNAME    25   O 13 56
+     A                                 14  4'-----------------------------------
      A                                      ------------------------------------
-     A                                      //'
+     A                                      --'
      A                                      COLOR(WHT)
      A          R STUDCTL                   SFLCTL(STUDSFL)
      A  50                                  SFLDSPCTL
@@ -147,13 +150,20 @@
      A N50                                  SFLCLR
      A  50                                  SFLEND(*MORE)
      A                                      OVERLAY
-     A                                      SFLPAG(3)
+     A                                      SFLPAG(2)
      A                                      SFLSIZ(1000)
-     A                                 10  2'Opt'
+     A                                      CF12(12)
+     A                                      CF05(05)
+     A                                      CF08(08)
+     A  31                                  SFLDROP(CF11)
+     A N31                                  SFLFOLD(CF11)
+     A                                      SFLMODE(&MODE)
+     A            MODE           1A  H
+     A                                 10  1'Opt'
      A                                      COLOR(WHT)
-     A                                 10  6'ID'
+     A                                 10  5'ID'
      A                                      COLOR(WHT)
-     A                                 10 19'Student Name'
+     A                                 10 12'Student Name'
      A                                      COLOR(WHT)
      A                                 10 37'Crs ID'
      A                                      COLOR(WHT)
@@ -168,21 +178,24 @@
      A                                  4  7'Course ID:'
      A            ST_INPCRS      5N 0B  4 19
      A                                  5  7'Semester:'
-     A            ST_INPSEM     10   B  5 19
+     A            ST_INPSEM     10   B  5 19CHECK(LC)
      A                                  3 33'OR'
      A                                  4 33'OR'
      A                                  3 38'Student Name:'
-     A            ST_INPNAM     25   B  3 52
+     A            ST_INPNAM     25   B  3 52CHECK(LC)
      A                                  4 38'Course Name:'
-     A            ST_INPCRS1    25   B  4 52
-     A                                  9  2'A-Add New Marks'
+     A            ST_INPCRSN    25   B  4 52CHECK(LC)
+     A                                  9  2'A-Add New Subject'
      A                                      COLOR(BLU)
      A                                  9 21'C-Change Semester'
      A                                      COLOR(BLU)
      A                                  9 42'D-Delete'
      A                                      COLOR(BLU)
-     A            MSG_STUDET    70   B  7  6COLOR(TRQ)
+     A            MSG_STUDET    70   O  7  6COLOR(TRQ)
      A          R ADDDETAIL                 OVERLAY
+     A                                      CF12(12)
+     A                                      CF08(08)
+     A                                      CF05(05)
      A                                  4  6'Add Details'
      A                                      COLOR(WHT)
      A                                      DSPATR(UL)
@@ -196,9 +209,13 @@
      A            DT_STNAME     25   O  8 37
      A            DT_CRSNAME    25   O 10 37
      A            DT_SEMEST     10   O 12 37
-     A            DT_SUBNAME    25   B 14 37
+     A            DT_SUBNAME    25   B 14 37CHECK(LC)
      A            DT_MARKS       5N 0B 16 37
+     A            MSG_ADDDET    70   O 19  4COLOR(TRQ)
      A          R CHGSMST                   OVERLAY
+     A                                      CF12(12)
+     A                                      CF08(08)
+     A                                      CF05(05)
      A                                  4  6'Change Semester'
      A                                      COLOR(WHT)
      A                                      DSPATR(UL)
@@ -209,5 +226,14 @@
      A            CS_STNAME     25      8 36
      A            CS_STID        5N 0   6 36
      A                                 12 19'Semester......:'
-     A            CS_SEMEST     10   B 12 36
+     A            CS_SEMEST     10   B 12 36CHECK(LC)
+     A            MSG_CHGSEM    70   O 19  4COLOR(TRQ)
+     A          R NORESULT                  OVERLAY
+     A N51                             12 33'No Results found'
+     A                                      COLOR(YLW)
 
+     A*%%RS+<record-sequences>
+     A*%%RS+ <sequence name="Untitled">
+     A*%%RS+  <device type="display" width="80" height="24" />
+     A*%%RS+ </sequence>
+     A*%%RS </record-sequences>
