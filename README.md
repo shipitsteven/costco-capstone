@@ -22,7 +22,7 @@ A/S 400 is not a commonly hosted environment. However, there's a free host calle
 
 ### Login
 
-![login](./screencaps/login.jpg)
+![login](/screencaps/login.jpg)
 
 ### Main Menu
 
