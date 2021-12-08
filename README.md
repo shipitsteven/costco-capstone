@@ -22,33 +22,33 @@ A/S 400 is not a commonly hosted environment. However, there's a free host calle
 
 ### Login
 
-[login](./screencaps/login.jpg)
+![login](./screencaps/login.jpg)
 
 ### Main Menu
 
-[main menu](./screencaps/mainmenu.jpg)
+![main menu](./screencaps/mainmenu.jpg)
 
 ### Add Subject
 
-[add subject](./screencaps/addsubject.jpg)
+![add subject](./screencaps/addsubject.jpg)
 
 ### Add Course
 
-[add course](./screencaps/addcourse.jpg)
+![add course](./screencaps/addcourse.jpg)
 
 ### Add Student
 
-[add student](./screencaps/addstudent.jpg)
+![add student](./screencaps/addstudent.jpg)
 
 ### View Students
 
-[view students](./screencaps/viewstudents.jpg)
+![view students](./screencaps/viewstudents.jpg)
 
-[fold and drop](./screencaps/folddrop.jpg)
+![fold and drop](./screencaps/folddrop.jpg)
 
-[add details](./screencaps/adddetails.jpg)
+![add details](./screencaps/adddetails.jpg)
 
-[change semester](./screencaps/changesemester.jpg)
+![change semester](./screencaps/changesemester.jpg)
 
 ## Acknoledgements
 
