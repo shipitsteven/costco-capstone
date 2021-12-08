@@ -1,82 +1,59 @@
-# costco-capstone
+# Xpanxion/Costco Apprenticeship Capstone Project
 
-## Display file variables
+> The *Step IT Up* program is a an approved Department of Labor Apprentice Program aimed at bring veterans, women and underserved population to the IT work force. For more details, [click here.](https://www.xpanxion.com/business-solutions-alliances/accelerated-talent-development/)
 
-### LOGIN
+For our training, we're focused on learning the technologies surrounding the **IBM iSeries**, also commonly known as `A/S 400`, alongside IBM's proprietary language called `RPG`, and its modern version `RPGLE`. Our ultimate goal is to showcase technical proficiency to become consultant software engineers for Costco Wholesale Corporation.
 
--   `USRNAME` - Both - Character(10)
--   `USRPWD` - Both - Character(10)
--   `MSG_LOGIN` - Both - Character(50)
+## STUDENT INFORMATION SYSTEM
 
-### MAINMENU
+The Objective of this project is to create a student information system that will allow the users to create subjects, add courses and students, and view the students' marks(grades).
 
--   `OPT_NEWSUB` - Input - Character(1)
--   `OPT_NEWCRS` - Input - Character(1)
--   `OPT_NEWSTU` - Input - Character(1)
--   `OPT_VIEWST` - Input - Character(1)
--   `MSG_MENU` - Output - Character(50)
+### Technology Used
 
-### NEWSUBJECT
+A/S 400 is not a commonly hosted environment. However, there's a free host called [PUB400](https://www.pub400.com/) that are available for educational purposes.
 
--   `NEWSUBNAME` - Both - Character(25)
--   `MSG_NEWSUB` - Output - Character(50)
+- Server: [PUB400](https://www.pub400.com/)
+- Environment: `IBM i 7.4`
+- Languages: `RPGLE` & `SQLRPGLE`
+- IDE: [Rational Developer for IBM i](https://www.ibm.com/products/rational-developer-for-i)
+- Emulator: [IBM i Access - Client Solutions 5250 emulator](https://www.ibm.com/support/pages/ibm-i-access-client-solutions)
 
-### NEWCOURSE
+## Screenshots
 
--   `CRSNAME` - Both - Character(25)
--   `SEMESTER` - Both - Character(10)
+### Login
 
-#### SUBSFL
+[login](./screencaps/login.jpg)
 
--   `SUB_ID` - Output - Zoned(5,0)
--   `SUB_NAME` - Output - Character(25)
--   `OPT_SUB` - Input - Character(1)
+### Main Menu
 
-### NEWSTUDENT
+[main menu](./screencaps/mainmenu.jpg)
 
--   `NSTUDNAME` - Both - Character(25)
--   `NSTUDADDR` - Both - Character(25)
--   `MSG_NEWSTU` - Output - Character(50)
+### Add Subject
 
-#### CRSSFL
+[add subject](./screencaps/addsubject.jpg)
 
--   `CRS_ID` - Output - Zoned(5,0)
--   `CRS_NAME` - Output - Character(25)
--   `OPT_CRS` - Input - Character(1)
+### Add Course
 
-### STUDDETAIL
+[add course](./screencaps/addcourse.jpg)
 
--   `ST_INPID` - Both - Zoned(5,0)
--   `ST_INPNAME` - Both - Character(25)
--   `ST_INPCRS` - Both - Zoned(5,0)
--   `ST_INPCRSN` - Both - Character(25)
--   `ST_INPSEM` - Both - Character(10)
+### Add Student
 
-#### STUDSFL
+[add student](./screencaps/addstudent.jpg)
 
--   `OPT_STUD` - Both - Character(1)
--   `ST_ID` - Output - Zoned(5,0)
--   `ST_NAME` - Output - Character(25)
--   `ST_CRSID` - Output - Zoned(5,0)
--   `ST_SEMEST` - Output - Character(10)
--   `ST_SUBID` - Output - Zoned(5,0)
--   `ST_MARKS` - Both - Zoned(5,0)
--   `ST_ADDR` - Output - Character(25)
--   `ST_SUBJECT` - Output - Character(25)
--   `ST_CRSNAME` - Output - Character(25)
+### View Students
 
-### ADDDETAIL
+[view students](./screencaps/viewstudents.jpg)
 
--   `DT_STID` - Output - Zoned(5,0)
--   `DT_STNAME` - Output - Character(25)
--   `DT_CRSNAME` - Output - Character(5,0)
--   `DT_SEMEST` - Output - Character(10)
--   `DT_SUBNAME` - Both - Character(25)
--   `DT_MARKS` - Both - Zoned(5,0)
+[fold and drop](./screencaps/folddrop.jpg)
 
-### CHGSMST
+[add details](./screencaps/adddetails.jpg)
 
--   `CS_STID` - Output - Zoned(5,0)
--   `CS_STNAME` - Output - Character(25)
--   `CS_CRSNAME` - Output - Character(25)
--   `CS_SEMEST` - Both - Character(10)
+[change semester](./screencaps/changesemester.jpg)
+
+## Acknoledgements
+
+- This project was developed by Steven Wang and Max Ma in November & December 2021
+- Our instructor was Vicky Scrubar - [LinkedIn](https://www.linkedin.com/in/vickysrubar/)
+- Our coach was Myra D. Ford - [LinkedIn](https://www.linkedin.com/in/myra-d-ford-msa-dba-0a0337/)
+- Abundance of knowledge and tutorials from [Yusuf4Code on YouTube](https://www.youtube.com/c/mohammedyusufm)
+- *Veterans of the United States for their service*
