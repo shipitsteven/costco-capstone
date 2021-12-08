@@ -226,3 +226,7 @@ Dcl-PR delete_subject_from_StuDetails;
      inputStuId Like(Student_t.id);
      inputSubId Like(Subject_t.id);
 End-PR;
+
+Dcl-PR reset_last_subj_to_default;
+     inputStuId Like(Student_t.id);
+END-PR;

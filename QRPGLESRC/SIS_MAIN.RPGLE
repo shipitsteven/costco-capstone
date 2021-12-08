@@ -63,6 +63,10 @@ Dcl-S tCrsName Like(Course_t.name);
 Dcl-S tSemName Like(Semester_t.term);
 Dcl-S tSubName Like(Subject_t.name);
 
+// --- alphabet translation ---
+Dcl-C lo 'abcdefghijklmnopqrstuvwxyz';
+Dcl-C up 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 // Main program starts here
 DOU indicators.exit = *ON AND loggedIn = *Off;
   EXSR $LoginSR;
@@ -475,6 +479,11 @@ BegSr $ViewStuOpt;
       Exsr $clearSearchParams;
       LeaveSr;
     ELSEIF indicators.refresh = *ON;
+      searchParams.StuId = 0;
+      searchParams.StuName = ' ';
+      searchParams.CourseId = 0;
+      searchParams.CourseName = ' ';
+      searchParams.Semester = ' ';
       Exsr $clearSearchParams;
       Exsr $clearSearchSfl;
       MSG_STUDET = 'Page refreshed, fields cleared';
@@ -660,22 +669,60 @@ BegSr $AddSubjectToStudent;
 ENDSR;
 
 BegSr $DeleteSubject;
-   // check if student has more than 1 subject
    numOfSubjects = has_num_of_subjects(ST_ID);
    deletedStuId = ST_ID;
    deletedSubId = ST_SUBID;
+   // check if student has more than 1 subject
    IF numOfSubjects > 1;
-     delete_subject_from_Studetails(ST_ID:ST_SUBID);
-     Exsr $clearSearchSfl;
-     Exsr $reloadSearchResult;
-     MSG_STUDET = 'Delete subject ID ' + %CHAR(deletedSubId) + ' from Student ID '
-     + %CHAR(deletedStuId);
+     del_StuId = deletedStuId;
+     del_SubId = deletedSubId;
+     Exfmt WIN_DEL;
+      SELECT;
+        WHEN DEL_SEL = 1;
+         delete_subject_from_Studetails(ST_ID:ST_SUBID);
+         Exsr $clearSearchSfl;
+         Exsr $reloadSearchResult;
+         MSG_STUDET = 'Delete subject ID ' + %CHAR(deletedSubId) + ' from Student ID '
+         + %CHAR(deletedStuId);
+        WHEN DEL_SEL = 2;
+         MSG_STUDET = 'Chose not to proceed with deletion';
+         OPT_STUD = ' ';
+         Update STUDSFL;
+        WHEN DEL_SEL = 3;
+         MSG_STUDET = 'Deletion cancelled';
+         OPT_STUD = ' ';
+         Update STUDSFL;
+        OTHER;
+         MSG_STUDET = 'Deletion cancelled';
+         OPT_STUD = ' ';
+         Update STUDSFL;
+      ENDSL;
    ELSE;
-     delete_subject_from_Studetails(ST_ID:ST_SUBID);
-     delete_Student_from_Stumaster(ST_ID);
-     Exsr $clearSearchSfl;
-     Exsr $reloadSearchResult;
-     MSG_STUDET = 'Delete Student ID ' + %CHAR(deletedStuId);
+     delrm_StID = deletedStuId;
+     Exfmt WIN_DELRM;
+     SELECT;
+        WHEN DELRM_SEL = 1;
+         reset_last_subj_to_default(deletedStuId);
+         Exsr $clearSearchSfl;
+         Exsr $reloadSearchResult;
+         MSG_STUDET = 'Reset subject ID ' + %CHAR(deletedSubId) + ' to 0 for Student ID '
+         + %CHAR(deletedStuId);
+        WHEN DELRM_SEL = 2;
+         delete_subject_from_Studetails(ST_ID:ST_SUBID);
+         delete_Student_from_Stumaster(ST_ID);
+         Exsr $clearSearchSfl;
+         Exsr $reloadSearchResult;
+         MSG_STUDET = 'Delete Student ID ' + %CHAR(deletedStuId);
+        WHEN DELRM_SEL = 3;
+         MSG_STUDET = 'Deletion cancelled';
+         OPT_STUD = ' ';
+         Update STUDSFL;
+        OTHER;
+         MSG_STUDET = 'Deletion cancelled';
+         OPT_STUD = ' ';
+         Update STUDSFL;
+      ENDSL;
+
    ENDIF;
 ENDSR;
 
@@ -783,7 +830,8 @@ BegSr $searchByStudentName;
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
 //      IF foundStudent.StuName = %TRIM(ST_INPNAM);
-      IF %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0;
+      IF %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0 OR
+        %XLATE(lo:up:%TRIM(ST_INPNAM)) = '*ALL';
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -818,7 +866,8 @@ BegSr $searchByCourseName;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
+      IF %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0 OR
+        %XLATE(lo:up:%TRIM(ST_INPCRSN)) = '*ALL';
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -838,7 +887,8 @@ BegSr $searchBySemester;
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
 //      IF foundStudent.Semester = ST_INPSEM;
-      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0;
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+        OR %XLATE(lo:up:%TRIM(ST_INPSEM)) = '*ALL';
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();

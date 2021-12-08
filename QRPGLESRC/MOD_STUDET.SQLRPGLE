@@ -264,6 +264,19 @@ Dcl-Proc delete_Student_from_Stumaster Export;
 
 END-PROC;
 
+Dcl-Proc reset_last_subj_to_default Export;
+   Dcl-PI reset_last_subj_to_default;
+     inputStuId Like(Student_t.id);
+   END-PI;
+
+   EXEC SQL
+     UPDATE StuDetails SET SubjectId = 0, Marks = 0
+     WHERE StuID = :inputStuId;
+
+   Dsply SQLCODE;
+
+END-PROC;
+
 Dcl-Proc get_search_type Export;
   Dcl-PI get_search_type CHAR(25);
      sStuId       Like(Student_t.id);

@@ -38,7 +38,7 @@
      A                                  5 37USER
      A                                  9 22'User Name...:'
      A                                 10 22'Password....:'
-     A            MSG_LOGIN     50   O 14 16COLOR(YLW)
+     A            MSG_LOGIN     50   O 14 16COLOR(PNK)
      A            USRNAME       10   B  9 36CHECK(LC)
      A            USRPWD        10   B 10 36CHECK(LC)
      A                                      DSPATR(ND)
@@ -54,7 +54,7 @@
      A            OPT_NEWCRS     1M  I  9 21
      A            OPT_NEWSTU     1M  I 11 21
      A            OPT_VIEWST     1M  I 13 21
-     A            MSG_MENU      50   O 16 15COLOR(TRQ)
+     A            MSG_MENU      50   O 16 15COLOR(PNK)
      A          R NEWSUBJECT                CF08(08)
      A                                      CF05(05)
      A                                      CF12(12)
@@ -64,7 +64,7 @@
      A                                      DSPATR(UL)
      A                                  9 20'Subject Name:'
      A            NEWSUBNAME    25   B  9 34CHECK(LC)
-     A            MSG_NEWSUB    50   O 13 17COLOR(TRQ)
+     A            MSG_NEWSUB    50   O 13 17COLOR(PNK)
      A          R MSGREC                    OVERLAY
      A            MESSAGE       60   O 22 10COLOR(TRQ)
      A          R SUBSFL                    SFL
@@ -93,7 +93,7 @@
      A                                  8 23'Semester..:'
      A            SEMESTER      10   B  8 35CHECK(LC)
      A                                 11  5'1-Select'
-     A            MSG_NEWCRS    70   O 10  6COLOR(TRQ)
+     A            MSG_NEWCRS    70   O 10  6COLOR(PNK)
      A          R CRSSFL                    SFL
      A  60                                  SFLNXTCHG
      A            OPT_CRS        1M  I 13  9
@@ -121,7 +121,7 @@
      A                                  8 18'Student Address:..:'
      A            NSTUDADDR     25   B  8 39CHECK(LC)
      A                                 11  5'1-Select'
-     A            MSG_NEWSTU    70   O 10  6COLOR(TRQ)
+     A            MSG_NEWSTU    70   O 10  6COLOR(PNK)
      A          R STUDSFL                   SFL
      A  60                                  SFLNXTCHG
      A            OPT_STUD       1   B 11  2
@@ -158,6 +158,7 @@
      A  31                                  SFLDROP(CF11)
      A N31                                  SFLFOLD(CF11)
      A                                      SFLMODE(&MODE)
+     A                                      CF04(04)
      A            MODE           1A  H
      A                                 10  1'Opt'
      A                                      COLOR(WHT)
@@ -191,7 +192,7 @@
      A                                      COLOR(BLU)
      A                                  9 42'D-Delete'
      A                                      COLOR(BLU)
-     A            MSG_STUDET    70   O  7  6COLOR(TRQ)
+     A            MSG_STUDET    70   O  7  6COLOR(PNK)
      A          R ADDDETAIL                 OVERLAY
      A                                      CF12(12)
      A                                      CF08(08)
@@ -211,7 +212,7 @@
      A            DT_SEMEST     10   O 12 37
      A            DT_SUBNAME    25   B 14 37CHECK(LC)
      A            DT_MARKS       5N 0B 16 37
-     A            MSG_ADDDET    70   O 19  4COLOR(TRQ)
+     A            MSG_ADDDET    70   O 19  4COLOR(PNK)
      A          R CHGSMST                   OVERLAY
      A                                      CF12(12)
      A                                      CF08(08)
@@ -227,11 +228,68 @@
      A            CS_STID        5N 0   6 36
      A                                 12 19'Semester......:'
      A            CS_SEMEST     10   B 12 36CHECK(LC)
-     A            MSG_CHGSEM    70   O 19  4COLOR(TRQ)
+     A            MSG_CHGSEM    70   O 19  4COLOR(PNK)
      A          R NORESULT                  OVERLAY
      A N51                             12 33'No Results found'
-     A                                      COLOR(YLW)
-
+     A                                      COLOR(RED)
+     A          R WIN_OPT                   WINDOW(6 19 8 38)
+     A                                      WDWTITLE((*TEXT 'Choose an option')-
+     A                                       (*COLOR WHT) *TOP *CENTER)
+     A                                      WDWBORDER((*COLOR WHT))
+     A                                      WDWBORDER((*CHAR '...::...'))
+     A            STU_SEL        2Y 0B  5  8SNGCHCFLD
+                                            CHOICE(1 '>A - Add Subject     ')
+                                            CHOICE(2 '>C - Change Semeste  ')
+                                            CHOICE(3 '>D - Delete Entry    ')
+     A                                  2  9'Use [Space] to select'
+     A                                      COLOR(WHT)
+     A                                  3 13'[Enter] to return '
+     A                                      COLOR(WHT)
+     A          R WIN_DEL                   CF12(12)
+     A                                      WINDOW(5 14 14 50)
+     A                                      WDWTITLE((*TEXT 'Confirmation') +
+     A                                      (*COLOR WHT) *TOP *CENTER)
+     A                                      WDWBORDER((*COLOR WHT))
+     A                                  8 19'Are you sure?'
+     A                                  4 15' This cannot be undone. '
+     A                                      COLOR(RED)
+     A                                      DSPATR(HI RI)
+     A                                  2  5'[Space] to select'
+     A                                      COLOR(WHT)
+     A                                  2 29'[Enter] to confirm'
+     A                                      COLOR(WHT)
+     A            DEL_SEL        2Y 0B 11 15SNGCHCFLD
+     A                                      CHOICE(1 '>YES')
+     A                                      CHOICE(2 '>NO')
+     A                                      CHOICE(3 '>CANCEL')
+     A                                  6 36'StuID:'
+     A            DEL_STUID      5N 0O  6 43
+     A                                  6 12'Subject ID:'
+     A            DEL_SUBID      5N 0O  6 24COLOR(RED)
+     A                                  6  3'Removing'
+     A                                  6 31'from'
+     A          R WIN_DELRM                 WINDOW(5 14 14 50)
+     A                                      WDWTITLE((*TEXT 'Confirmation') +
+     A                                      (*COLOR WHT) *TOP *CENTER)
+     A                                      WDWBORDER((*COLOR WHT))
+     A                                      CF12(12)
+     A                                  2  5'[Space] to select'
+     A                                      COLOR(WHT)
+     A                                  2 29'[Enter] to confirm'
+     A                                      COLOR(WHT)
+     A                                  4 15' This cannot be undone. '
+     A                                      COLOR(RED)
+     A                                      DSPATR(HI RI)
+     A                                  6  4'** This is the last subject on thi-
+     A                                      s student **'
+     A                                      DSPATR(UL)
+     A                                  9  7'Do you want to:'
+     A            DELRM_SEL      2Y 0B 11 14SNGCHCFLD
+     A                                      CHOICE(1 '>REMOVE last subject')
+     A                                      CHOICE(2 '>DELETE student')
+     A                                      CHOICE(3 '>CANCEL')
+     A                                  7 16'Student ID:'
+     A            DELRM_STID     5N 0O  7 28COLOR(RED)
      A*%%RS+<record-sequences>
      A*%%RS+ <sequence name="Untitled">
      A*%%RS+  <device type="display" width="80" height="24" />
