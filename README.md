@@ -26,29 +26,29 @@ A/S 400 is not a commonly hosted environment. However, there's a free host calle
 
 ### Main Menu
 
-![main menu](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/mainmenu.jpg)
+![main menu](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/mainMenu.JPG)
 
 ### Add Subject
 
-![add subject](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addsubject.jpg)
+![add subject](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addsubject.JPG)
 
 ### Add Course
 
-![add course](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addcourse.jpg)
+![add course](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addCourse.JPG)
 
 ### Add Student
 
-![add student](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addstudent.jpg)
+![add student](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addStudent.JPG)
 
 ### View Students
 
-![view students](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/viewstudents.jpg)
+![view students](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/viewstudents.JPG)
 
-![fold and drop](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/folddrop.jpg)
+![fold and drop](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/folddrop.JPG)
 
-![add details](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/adddetails.jpg)
+![add details](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/adddetails.JPG)
 
-![change semester](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/changesemester.jpg)
+![change semester](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/changesemester.JPG)
 
 ## Acknoledgements
 
