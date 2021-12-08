@@ -18,37 +18,62 @@ A/S 400 is not a commonly hosted environment. However, there's a free host calle
 - IDE: [Rational Developer for IBM i](https://www.ibm.com/products/rational-developer-for-i)
 - Emulator: [IBM i Access - Client Solutions 5250 emulator](https://www.ibm.com/support/pages/ibm-i-access-client-solutions)
 
+## Getting Started
+
+The entry point to the program is `SIS_MAIN.RPGLE`. All other `RPGLE` and `SQLRPGLE` files are supposed to be compiled as modules, and create service programs for each module.
+
+The copybook for this program is called `PROTOTYPE.RPGLE` inside the source file `QCOPYBOOK`. It contains all sub procedure's prototypes, file imports, data structure for display file indicators, and a few subfile related variables
+
+The display file is inside `QDDSSRC`, named `SISDISPLAY.DSPF`.
+
+All data related physical files and logical files are the `PF` and `LF` in `QDDSSRC`
+
+These include:
+ - `Users.PF` - User credentials for logging in
+ - `StuMaster.PF` - Student related information
+ - `StuDetails.PF` - Student/subject/marks
+ - `SubMaster.PF` - Subject related information
+ - `SemMaster.PF` - Semester related information
+ - `CorMaster.PF` - Course related information
+ - `SubCourse.PF` - Details pertaining each course and what subjects it contains for a specific semester
+ - `ViewStudJF.LF` - Logical file joining multiple PFs for the view student detail screen
+
+#### Entity-Relationship Diagram for the Physical files
+
+![Capstone-EER](https://user-images.githubusercontent.com/62415298/145132567-e7d25133-01e9-4d10-a9fe-a068e250529d.png)
+
+
 ## Screenshots
 
 ### Login
 
-![login](./screencaps/login.jpg)
+![login](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/login.JPG)
 
 ### Main Menu
 
-![main menu](./screencaps/mainmenu.jpg)
+![main menu](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/mainMenu.JPG)
 
 ### Add Subject
 
-![add subject](./screencaps/addsubject.jpg)
+![add subject](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addsubject.JPG)
 
 ### Add Course
 
-![add course](./screencaps/addcourse.jpg)
+![add course](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addCourse.JPG)
 
 ### Add Student
 
-![add student](./screencaps/addstudent.jpg)
+![add student](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addStudent.JPG)
 
 ### View Students
 
-![view students](./screencaps/viewstudents.jpg)
+![view students](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/viewstudents.JPG)
 
-![fold and drop](./screencaps/folddrop.jpg)
+![fold and drop](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/folddrop.JPG)
 
-![add details](./screencaps/adddetails.jpg)
+![add details](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/adddetails.JPG)
 
-![change semester](./screencaps/changesemester.jpg)
+![change semester](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/changesemester.JPG)
 
 ## Acknoledgements
 
