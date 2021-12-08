@@ -53,6 +53,15 @@ Dcl-S updatedSem ind inz(*Off);
 Dcl-S updatedSemName Like(Semester_t.term);
 Dcl-S numOfSubjects Packed(5:0);
 Dcl-DS searchParams LikeDS(SearchParams_t);
+Dcl-S numOfMarksUpdated packed(5:0);
+Dcl-S deletedSubId Like(Subject_t.id);
+Dcl-S deletedStuId Like(Student_t.id);
+
+// --- Trimmed string values ---
+Dcl-S tStuName Like(Student_t.name);
+Dcl-S tCrsName Like(Course_t.name);
+Dcl-S tSemName Like(Semester_t.term);
+Dcl-S tSubName Like(Subject_t.name);
 
 // Main program starts here
 DOU indicators.exit = *ON AND loggedIn = *Off;
@@ -112,7 +121,6 @@ BegSr $SelectTable;
   DOW indicators.exit = *OFF;
     Write Header;
     Write Footer_M;
-    Clear MSG_MENU;
     Exfmt MAINMENU;
     IF indicators.refresh = *ON;
       Clear OPT_NEWSUB;
@@ -124,17 +132,22 @@ BegSr $SelectTable;
       SELECT;
         WHEN (OPT_NEWSUB = '1' AND OPT_NEWCRS = ' ' AND OPT_NEWSTU = ' ' AND OPT_VIEWST = ' ');
           Exsr $NewSubOpt;
+          Clear MSG_MENU;
         WHEN (OPT_NEWCRS = '1' AND OPT_NEWSUB = ' ' AND OPT_NEWSTU = ' ' AND OPT_VIEWST = ' ');
           Exsr $NewCrsOpt;
+          Clear MSG_MENU;
         WHEN (OPT_NEWSTU = '1' AND OPT_NEWSUB = ' ' AND OPT_NEWCRS = ' ' AND OPT_VIEWST = ' ');
           Exsr $NewStuOpt;
+          Clear MSG_MENU;
         WHEN (OPT_VIEWST = '1' AND OPT_NEWCRS = ' ' AND OPT_NEWSTU = ' ' AND OPT_NEWSUB = ' ');
           Exsr $ViewStuOpt;
+          Clear MSG_MENU;
         OTHER;
           MSG_Menu = 'Invalid option';
       ENDSL;
     ENDIF;
   ENDDO;
+  Clear MSG_MENU;
   MSG_LOGIN = 'Logged out, you can log in again now';
 ENDSR;
 
@@ -161,7 +174,7 @@ BegSr $NewSubOpt;
         SETLL *loval SUBMASTER;
         READ(N) SUBMASTER;
         DOW NOT %EOF(SUBMASTER);
-          If NEWSUBNAME = SUBNAME;
+          If %TRIM(NEWSUBNAME) = SUBNAME;
             MSG_NEWSUB = 'Subject already exists.';
             foundSubject = SUBJECTID;
             Leave;
@@ -176,14 +189,15 @@ BegSr $NewSubOpt;
           ELSE;
             SUBJECTID += 10;
           EndIf;
-          SUBNAME = NEWSUBNAME;
+          SUBNAME = %TRIM(NEWSUBNAME);
           WRITE SUBMAFMT;
-          MSG_NEWSUB = 'Subject ' + %trim(%CHAR(NEWSUBNAME))+' ID.' + %CHAR(SUBJECTID) + ' added';
+          MSG_NEWSUB = 'Subject ' + %trim(%CHAR(NEWSUBNAME))+' ID ' + %CHAR(SUBJECTID) + ' added';
           Clear NEWSUBNAME;
         ENDIF;
       ENDIF;
     ELSE;
       // do nothing
+      MSG_NEWSUB = 'Use F8 to add new Subject';
     Endif;
   ENDDO;
   Clear MSG_NEWSUB;
@@ -215,7 +229,7 @@ BegSr $NewCrsOpt;
         MSG_NEWCRS = 'Semester not found';
       ELSE;
       // validate course for existing course
-        currentCourseId = get_courseId(CRSNAME);
+        currentCourseId = get_courseId(%TRIM(CRSNAME));
         IF currentCourseID <> -1;
          // check for new combo
           newCourseSemCombo = is_new_course(currentCourseId:get_semId(SEMESTER));
@@ -259,7 +273,7 @@ BegSr $NewCrsOpt;
           ELSE;
             // insert new course into CorMaster
             opSuccessful = *Off;
-            opSuccessful = add_new_course((currentCourseId):CRSNAME);
+            opSuccessful = add_new_course((currentCourseId):%TRIM(CRSNAME));
 
             // insert all selected option into SubCourse
             addOrUpdate = 'ADDED';
@@ -268,6 +282,7 @@ BegSr $NewCrsOpt;
         ENDIF;
       ENDIF;
     ElSE;
+      MSG_NEWCRS = 'Use F8 to add new Course';
     EndIF;
   ENDDO;
 ENDSR;
@@ -313,7 +328,7 @@ BegSr $add_remaining_subj;
 
   Exsr $Load_Subject_SFL;
 
-  MSG_NEWCRS = %TRIM(addOrUpdate) +' - Course ID.' + %CHAR(currentCourseId) + ' in '
+  MSG_NEWCRS = %TRIM(addOrUpdate) +' - Course ID ' + %CHAR(currentCourseId) + ' in '
             + %TRIM(SEMESTER) + ' with ' + %CHAR(subjectCounter)
             +' subject(s) successfully';
 ENDSR;
@@ -365,7 +380,8 @@ BegSr $NewStuOpt;
            MSG_NEWSTU = 'Student name or address cannot be empty';
          ELSE;
            // check for existing student
-          foundStuId = is_new_student(NSTUDNAME);
+          tStuName = %TRIM(NSTUDNAME);
+          foundStuId = is_new_student(tStuName);
           IF foundStuId <> -1;
             MSG_NEWSTU = 'Student already exist. Their ID is ' + %CHAR(foundStuId);
           ELSE;
@@ -394,10 +410,10 @@ BegSr $NewStuOpt;
                lastStuId += 1;
               ENDIF;
               addSuccessful = *Off;
-              addSuccessful = add_new_student(lastStuId:NSTUDNAME:NSTUDADDR:CRS_ID);
-              Exsr $Load_Course_SFL;
-              MSG_NEWSTU = 'Student ID.' + %CHAR(lastStuId) + ' ' + %TRIM(NSTUDNAME)
+              addSuccessful = add_new_student(lastStuId:%TRIM(NSTUDNAME):%TRIM(NSTUDADDR):CRS_ID);
+              MSG_NEWSTU = 'Student ID ' + %CHAR(lastStuId) + ' ' + %TRIM(NSTUDNAME)
               + ' successfully enrolled in ' + %TRIM(CRS_NAME);
+              Exsr $Load_Course_SFL;
             ENDIF;
           ENDIF;
          ENDIF;
@@ -463,12 +479,14 @@ BegSr $ViewStuOpt;
       Exsr $clearSearchSfl;
       MSG_STUDET = 'Page refreshed, fields cleared';
     ELSE;
+         tStuName = %TRIM(ST_INPNAM);
+         tCrsName = %TRIM(ST_INPCRSN);
+         tSemName = %TRIM(ST_INPSEM);
+      IF searchParams.StuId <> St_INPID OR searchParams.StuName <> tStuName OR
+        searchParams.CourseId <> ST_INPCRS OR searchParams.CourseName <> tCrsName OR
+        searchParams.Semester <> tSemName;
 
-      IF searchParams.StuId <> St_INPID OR searchParams.StuName <> ST_INPNAM OR
-        searchParams.CourseId <> ST_INPCRS OR searchParams.CourseName <> ST_INPCRSN OR
-        searchParams.Semester <> ST_INPSEM;
-
-        searchType = get_search_type(ST_INPID:ST_INPNAM:ST_INPCRS:ST_INPCRSN:ST_INPSEM);
+        searchType = get_search_type(ST_INPID:tStuName:ST_INPCRS:tCrsName:tSemName);
         MSG_STUDET = 'Search type: ' + %TRIM(searchType);
 
         SELECT;
@@ -504,10 +522,10 @@ BegSr $ViewStuOpt;
         ENDSL;
 
         searchParams.StuId = ST_INPID;
-        searchParams.StuName = ST_INPNAM;
+        searchParams.StuName = %TRIM(ST_INPNAM);
         searchParams.CourseId = ST_INPCRS;
-        searchParams.CourseName = ST_INPCRSN;
-        searchParams.Semester = ST_INPSEM;
+        searchParams.CourseName = %TRIM(ST_INPCRSN);
+        searchParams.Semester = %TRIM(ST_INPSEM);
 
       ELSE;
         Exsr $StudentSubjectOptions;
@@ -550,9 +568,10 @@ BegSr $ChangeSemester;
     ELSEIF indicators.save = *ON;
       updatedSem = *OFF;
       // is semester valid? is it greater than current semester?
-      validSemester = valid_Semester_by_name(ST_SEMEST:CS_SEMEST);
+      tSemName = %TRIM(CS_SEMEST);
+      validSemester = valid_Semester_by_name(ST_SEMEST:tSemName);
       IF validSemester = *ON;
-        updatedSemId = get_SemId(CS_SEMEST);
+        updatedSemId = get_SemId(tSemName);
         update_Student_semester(CS_STID:updatedSemId);
         updatedSemName = CS_SEMEST;
         MSG_CHGSEM = 'Student semester updated to: ' + %TRIM(CS_SEMEST);
@@ -604,7 +623,8 @@ BegSr $AddSubjectToStudent;
       dupSubject = *OFF;
       inSubCourse = *OFF;
       // check if subject is in subcourse with matching course id
-      updatingSubId = get_subject_id(DT_SUBNAME);
+      tSubName = %TRIM(DT_SUBNAME);
+      updatingSubId = get_subject_id(tSubName);
       IF updatingSubId = -1;
         MSG_ADDDET = 'Invalid subject - Subject does not exist';
         ITER;
@@ -613,7 +633,7 @@ BegSr $AddSubjectToStudent;
       dupSubject = is_duplicate_subject(DT_STID:updatingSubId);
       IF dupSubject = *ON;
         update_Marks(DT_STID:updatingSubId:DT_MARKS);
-        updatedSubName = DT_SUBNAME;
+        updatedSubName = %TRIM(DT_SUBNAME);
         updatedMarks = DT_Marks;
         MSG_ADDDET = 'Student already enrolled. Updating Marks to ' + %CHAR(DT_MARKS);
         ST_MARKS = updatedMarks;
@@ -627,7 +647,7 @@ BegSr $AddSubjectToStudent;
         IF inSubCourse = *ON;
           add_subject_to_StuDetails(DT_STID:updatingSubId:DT_Marks);
           MSG_ADDDET = 'BINGO! Student added to new subject';
-          updatedSubName = DT_SUBNAME;
+          updatedSubName = %TRIM(DT_SUBNAME);
           updatedMarks = DT_Marks;
           updatedSub = *ON;
         ELSE;
@@ -642,19 +662,20 @@ ENDSR;
 BegSr $DeleteSubject;
    // check if student has more than 1 subject
    numOfSubjects = has_num_of_subjects(ST_ID);
+   deletedStuId = ST_ID;
+   deletedSubId = ST_SUBID;
    IF numOfSubjects > 1;
-    // TODO: Delete subject from StuDetails
      delete_subject_from_Studetails(ST_ID:ST_SUBID);
      Exsr $clearSearchSfl;
      Exsr $reloadSearchResult;
-     MSG_STUDET = 'Delete subject ID.' + %CHAR(ST_SUBID) + 'from Student ID.' + %CHAR(ST_ID);
+     MSG_STUDET = 'Delete subject ID ' + %CHAR(deletedSubId) + ' from Student ID '
+     + %CHAR(deletedStuId);
    ELSE;
-    // TODO: Delete subject from StuDetails & student from StuMaster
      delete_subject_from_Studetails(ST_ID:ST_SUBID);
      delete_Student_from_Stumaster(ST_ID);
      Exsr $clearSearchSfl;
      Exsr $reloadSearchResult;
-     MSG_STUDET = 'Delete Student ID.' + %CHAR(ST_ID);
+     MSG_STUDET = 'Delete Student ID ' + %CHAR(deletedStuId);
    ENDIF;
 ENDSR;
 
@@ -688,15 +709,14 @@ BegSr $populateSflFields;
   ST_SUBJECT = foundStudent.SubName;
   ST_CRSNAME = foundStudent.CourseName;
   ST_MARKS = foundStudent.Marks;
+
   Exsr $DisplaySflAndFold;
   Write STUDSFL;
 ENDSR;
 
-// testing
 BegSr $DisplaySflAndFold;
   IF StudRRN > 0;
     indicators.sflDspData = *ON;
-//    indicators.sflNxtChg = *ON;
   ENDIF;
 ENDSR;
 
@@ -710,9 +730,22 @@ IF indicators.sflDspData = *ON;
   ELSEIF OPT_STUD = 'D';
     Exsr $DeleteSubject;
   ELSEIF indicators.save = *ON;
+    numOfMarksUpdated = 0;
     update_Marks(ST_ID:ST_SUBID:ST_Marks);
-    MSG_STUDET = 'Marks for Subject ID.' + %TRIM(%CHAR(ST_SUBID)) + ' updated to ' +
-    %TRIM(%CHAR(ST_Marks));
+    DOW NOT %EOF();
+      READC STUDSFL;
+      update_Marks(ST_ID:ST_SUBID:ST_MARKS);
+      numOfMarksUpdated += 1;
+    ENDDO;
+    IF numOfMarksUpdated = 1;
+      MSG_STUDET = 'Marks for Subject ID ' + %TRIM(%CHAR(ST_SUBID)) + ' updated to ' +
+      %TRIM(%CHAR(ST_Marks));
+    ELSEIF numOfMarksUpdated = 0;
+      MSG_STUDET = 'No marks changed, no need for update';
+    ELSE;
+      MSG_STUDET = 'Updated marks on ' + %CHAR(numOfMarksUpdated) + ' subjects';
+    ENDIF;
+
   ELSEIF indicators.exit = *ON;
     LeaveSr;
   ELSE;
@@ -737,20 +770,20 @@ BegSr $searchByStudentId;
     ENDDO;
     ViewStud_Close();
     ENDIF;
-//    Exsr $DisplaySflAndFold;
   ENDIF;
 ENDSR;
 
 BegSr $searchByStudentName;
   Exsr $clearSearchSfl;
-  foundStudent.StuId = is_new_student(ST_INPNAM);
-  IF foundStudent.StuId = -1;
-    MSG_STUDET = 'Student with name: ' + %TRIM(ST_INPNAM) + ' not found';
-  ELSE;
+//  foundStudent.StuId = is_new_student(ST_INPNAM);
+//  IF foundStudent.StuId = -1;
+//    MSG_STUDET = 'Student with name: ' + %TRIM(ST_INPNAM) + ' not found';
+//  ELSE;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.StuName = ST_INPNAM;
+//      IF foundStudent.StuName = %TRIM(ST_INPNAM);
+      IF %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0;
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -758,7 +791,7 @@ BegSr $searchByStudentName;
     ViewStud_Close();
     ENDIF;
     Exsr $DisplaySflAndFold;
-  ENDIF;
+//  ENDIF;
 ENDSR;
 
 BegSr $searchByCourseId;
@@ -785,7 +818,7 @@ BegSr $searchByCourseName;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.CourseName = ST_INPCRSN;
+      IF %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -804,7 +837,8 @@ BegSr $searchBySemester;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.Semester = ST_INPSEM;
+//      IF foundStudent.Semester = ST_INPSEM;
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0;
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -823,7 +857,7 @@ BegSr $searchByStuIdCrsIdSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuId = ST_INPID
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0 AND foundStudent.StuId = ST_INPID
         AND foundStudent.StuCrsId = ST_INPCRS;
         Exsr $populateSflFields;
       ENDIF;
@@ -843,8 +877,8 @@ BegSr $searchByStuIdCrsNameSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuId = ST_INPID
-        AND foundStudent.CourseName = ST_INPCRSN;
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0 AND foundStudent.StuId = ST_INPID
+        AND %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -863,7 +897,8 @@ BegSr $searchByStuNameCrsIdSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuName = ST_INPNAM
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+        AND %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
         AND foundStudent.StuCrsId = ST_INPCRS;
         Exsr $populateSflFields;
       ENDIF;
@@ -883,8 +918,9 @@ BegSr $searchByStuNameCrsNameSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF foundStudent.Semester = ST_INPSEM AND foundStudent.StuName = ST_INPNAM
-        AND foundStudent.CourseName = ST_INPCRSN;
+      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+        AND %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
+        AND %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -899,7 +935,10 @@ BegSr $searchByStuNameCrsNameSem;
 ENDSR;
 
 BegSr $reloadSearchResult;
-    searchType = get_search_type(ST_INPID:ST_INPNAM:ST_INPCRS:ST_INPCRSN:ST_INPSEM);
+    tStuName = %TRIM(ST_INPNAM);
+    tCrsName = %TRIM(ST_INPCRSN);
+    tSemName = %TRIM(ST_INPSEM);
+    searchType = get_search_type(ST_INPID:tStuName:ST_INPCRS:tCrsName:tSemName);
 
     SELECT;
        When searchType = 'Invalid';
