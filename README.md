@@ -22,33 +22,33 @@ A/S 400 is not a commonly hosted environment. However, there's a free host calle
 
 ### Login
 
-![login](/screencaps/login.jpg)
+![login](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/login.JPG)
 
 ### Main Menu
 
-![main menu](./screencaps/mainmenu.jpg)
+![main menu](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/mainmenu.jpg)
 
 ### Add Subject
 
-![add subject](./screencaps/addsubject.jpg)
+![add subject](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addsubject.jpg)
 
 ### Add Course
 
-![add course](./screencaps/addcourse.jpg)
+![add course](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addcourse.jpg)
 
 ### Add Student
 
-![add student](./screencaps/addstudent.jpg)
+![add student](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/addstudent.jpg)
 
 ### View Students
 
-![view students](./screencaps/viewstudents.jpg)
+![view students](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/viewstudents.jpg)
 
-![fold and drop](./screencaps/folddrop.jpg)
+![fold and drop](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/folddrop.jpg)
 
-![add details](./screencaps/adddetails.jpg)
+![add details](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/adddetails.jpg)
 
-![change semester](./screencaps/changesemester.jpg)
+![change semester](https://github.com/shipitsteven/costco-capstone/blob/main/screencaps/changesemester.jpg)
 
 ## Acknoledgements
 
