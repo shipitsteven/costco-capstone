@@ -2,7 +2,7 @@
 
 // File imports
 Dcl-F SISDisplay Workstn indds(indicators) sfile(SUBSFL:SubRRN) sfile(CRSSfl:CrsRRN)
-sfile(StudSFL:StudRRN);
+sfile(StudSFL:StudRRN) sfile(AvaSubSfl:AvaRRN);
 Dcl-F Users Disk Keyed Usage(*Update);
 Dcl-F Submaster Disk Keyed Usage(*Update:*Input:*Output);
 //Dcl-F CorMaster Disk Keyed Usage(*Update:*Input:*Output);
@@ -14,6 +14,7 @@ Dcl-F ViewStudJF Disk Keyed Usage(*Input);
 // Indicators for display file
 Dcl-ds indicators len(99) qualified;
   exit        ind pos(3);
+  prompt      ind pos(4);
   refresh     ind pos(5);
   save        ind pos(8);
   back        ind pos(12);
@@ -22,12 +23,15 @@ Dcl-ds indicators len(99) qualified;
   sflNxtChg   ind pos(60);
   sflDspData  ind pos(51);
   sflFold     ind pos(31);
+  exSflClear  ind pos(70);
+  exSflDspData ind pos(71);
 End-ds;
 
 // Relative record numbers
 Dcl-S SubRRN Packed(5:0);
 Dcl-S CrsRRN Packed(5:0);
 Dcl-S StudRRN Packed(5:0);
+Dcl-S AvaRRN Packed(5:0);
 
 // File related data structures
 Dcl-DS Users_t Qualified Template;
@@ -229,4 +233,20 @@ End-PR;
 
 Dcl-PR reset_last_subj_to_default;
      inputStuId Like(Student_t.id);
+END-PR;
+
+// --- Extra ---
+Dcl-PR AvaSubject_Open Ind;
+    inputCrsId Like(Course_t.id);
+    inputSemId Like(Semester_t.id);
+End-PR;
+
+Dcl-PR AvaSubject_IsOk Ind End-PR;
+
+Dcl-PR AvaSubject_FetchNext Like(Subject_t.id) End-PR;
+
+Dcl-PR AvaSubject_Close End-PR;
+
+Dcl-PR get_subName_from_id Like(Subject_t.name);
+    inputSubId Like(Subject_t.id);
 END-PR;

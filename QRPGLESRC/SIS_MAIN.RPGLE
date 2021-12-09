@@ -57,6 +57,11 @@ Dcl-S numOfMarksUpdated packed(5:0);
 Dcl-S deletedSubId Like(Subject_t.id);
 Dcl-S deletedStuId Like(Student_t.id);
 
+// --- extra features ---
+Dcl-S avaSubId Like(Subject_t.id);
+Dcl-S avaSubName Like(Subject_t.name);
+Dcl-S avaSemId Like(Semester_t.id);
+
 // --- Trimmed string values ---
 Dcl-S tStuName Like(Student_t.name);
 Dcl-S tCrsName Like(Course_t.name);
@@ -628,6 +633,8 @@ BegSr $AddSubjectToStudent;
       Clear DT_SUBNAME;
       Clear DT_MARKS;
       MSG_ADDDET = 'Page refreshed, fields cleared';
+    ELSEIF indicators.prompt = *ON;
+      Exsr $showAvailableSubjects;
     ELSEIF indicators.save = *ON;
       dupSubject = *OFF;
       inSubCourse = *OFF;
@@ -655,7 +662,7 @@ BegSr $AddSubjectToStudent;
 
         IF inSubCourse = *ON;
           add_subject_to_StuDetails(DT_STID:updatingSubId:DT_Marks);
-          MSG_ADDDET = 'BINGO! Student added to new subject';
+          MSG_ADDDET = 'BINGO! Student added to new subject: ' + %TRIM(DT_SUBNAME);
           updatedSubName = %TRIM(DT_SUBNAME);
           updatedMarks = DT_Marks;
           updatedSub = *ON;
@@ -907,7 +914,9 @@ BegSr $searchByStuIdCrsIdSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0 AND foundStudent.StuId = ST_INPID
+      IF (%SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+        OR %XLATE(lo:up:%TRIM(ST_INPSEM)) = '*ALL')
+        AND foundStudent.StuId = ST_INPID
         AND foundStudent.StuCrsId = ST_INPCRS;
         Exsr $populateSflFields;
       ENDIF;
@@ -927,8 +936,11 @@ BegSr $searchByStuIdCrsNameSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0 AND foundStudent.StuId = ST_INPID
-        AND %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
+      IF (%SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+            OR %XLATE(lo:up:%TRIM(ST_INPSEM)) = '*ALL')
+        AND foundStudent.StuId = ST_INPID
+        AND (%SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0
+            OR %XLATE(lo:up:%TRIM(ST_INPCRSN)) = '*ALL');
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -947,8 +959,10 @@ BegSr $searchByStuNameCrsIdSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
-        AND %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
+      IF (%SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+        OR %XLATE(lo:up:%TRIM(ST_INPSEM)) = '*ALL')
+        AND (%SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
+        OR %XLATE(lo:up:%TRIM(ST_INPNAM)) = '*ALL')
         AND foundStudent.StuCrsId = ST_INPCRS;
         Exsr $populateSflFields;
       ENDIF;
@@ -968,9 +982,12 @@ BegSr $searchByStuNameCrsNameSem;
     IF ViewStud_Open();
     foundStudent = ViewStud_FetchNext();
     DOW ViewStud_IsOk();
-      IF %SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
-        AND %SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
-        AND %SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0;
+      IF (%SCAN(%TRIM(ST_INPSEM):foundStudent.Semester) <> 0
+          OR %XLATE(lo:up:%TRIM(ST_INPSEM)) = '*ALL')
+        AND (%SCAN(%TRIM(ST_INPNAM):foundStudent.StuName) <> 0
+          OR %XLATE(lo:up:%TRIM(ST_INPNAM)) = '*ALL')
+        AND (%SCAN(%TRIM(ST_INPCRSN):foundStudent.CourseName) <> 0
+          OR %XLATE(lo:up:%TRIM(ST_INPCRSN)) = '*ALL');
         Exsr $populateSflFields;
       ENDIF;
       foundStudent = ViewStud_FetchNext();
@@ -1032,6 +1049,66 @@ BegSr $reloadSearchResult;
 
     updatedSub = *OFF;
     updatedSem = *OFF;
+
+ENDSR;
+
+BegSr $showAvailableSubjects;
+   indicators.exSflClear = *OFF;
+   AvaRRN = 0;
+   Write AVASUBCTL;
+   indicators.exSflClear = *ON;
+   indicators.exSflDspData = *OFF;
+
+   Write Header;
+   Write Footer_Bac;
+
+   DOW indicators.exit = *OFF;
+     indicators.exSflClear = *OFF;
+     AvaRRN = 0;
+     Write AVASUBCTL;
+     indicators.exSflClear = *ON;
+     indicators.exSflDspData = *OFF;
+
+     WRITE NoAvaSub;
+     AV_CRSNAME = DT_CRSNAME;
+     AV_SEMEST = DT_SEMEST;
+
+     avaSemId = get_SemId(DT_SEMEST);
+     IF AvaSubject_Open(ST_CRSID:avaSemId);
+       avaSubId = AvaSubject_FetchNext();
+       DOW AvaSubject_IsOk();
+         AvaRRN += 1;
+         AV_SUBID = avaSubId;
+         avaSubName = get_subName_from_id(avaSubId);
+         AV_SUBNAME = avaSubName;
+         WRITE AvaSubSfl;
+         avaSubId = AvaSubject_FetchNext();
+       ENDDO;
+       AvaSubject_Close();
+     ENDIF;
+
+     IF AvaRRN > 0;
+       indicators.exSflDspData = *ON;
+     ENDIF;
+
+     Exfmt AVASUBCTL;
+
+     IF indicators.back = *ON;
+       LeaveSr;
+     ENDIF;
+
+//     READC AvaSubSfl;
+//     IF OPT_AV = '1';
+//        DT_SUBNAME = AV_SUBNAME;
+//        DT_MARKS = 0;
+//        MSG_ADDDET = 'Subject ' + %TRIM(DT_SUBNAME) + ' selected from prompt screen';
+//        Exfmt ADDDETAIL;
+//        LeaveSr;
+//     ELSE;
+//        MSG_AV = 'Invalid Option, use 1 to select ONLY ONE subject';
+//     ENDIF;
+
+   ENDDO;
 
 ENDSR;
 

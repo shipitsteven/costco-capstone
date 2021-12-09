@@ -197,6 +197,7 @@
      A                                      CF12(12)
      A                                      CF08(08)
      A                                      CF05(05)
+     A                                      CF04(04)
      A                                  4  6'Add Details'
      A                                      COLOR(WHT)
      A                                      DSPATR(UL)
@@ -213,6 +214,9 @@
      A            DT_SUBNAME    25   B 14 37CHECK(LC)
      A            DT_MARKS       5N 0B 16 37
      A            MSG_ADDDET    70   O 19  4COLOR(PNK)
+     A                                 22 20'F4 for a list of available subject-
+     A                                      s'
+     A                                      COLOR(WHT)
      A          R CHGSMST                   OVERLAY
      A                                      CF12(12)
      A                                      CF08(08)
@@ -290,6 +294,45 @@
      A                                      CHOICE(3 '>CANCEL')
      A                                  7 16'Student ID:'
      A            DELRM_STID     5N 0O  7 28COLOR(RED)
+     A          R AVASUBSFL                 SFL
+     A            AV_SUBID       5N 0O 12 18
+     A            AV_SUBNAME    25     12 37
+     A          R AVASUBCTL                 SFLCTL(AVASUBSFL)
+     A                                      OVERLAY
+     A  70                                  SFLDSPCTL
+     A  71                                  SFLDSP
+     A N70                                  SFLCLR
+     A  70                                  SFLEND(*MORE)
+     A                                      SFLPAG(6)
+     A                                      SFLSIZ(1000)
+     A                                      CF12(12)
+     A                                  4  6'Available Subjects for:'
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A                                  6 11'Course:'
+     A                                  7 11'Course Semester:'
+     A            AV_CRSNAME    25      6 28
+     A            AV_SEMEST     10      7 28
+     A                                 11 16'Subject ID'
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A                                 11 43'Subject Name'
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A            MSG_AV        50   O  9 11COLOR(PNK)
+     A          R FOOTER_BAC                OVERLAY
+     A                                 23 23'F3-Exit'
+     A                                      COLOR(BLU)
+     A                                 23 52'F12-BACK'
+     A                                      COLOR(BLU)
+     A          R NOAVASUB                  OVERLAY
+     A                                 14 29'No available subjects'
+     A                                      COLOR(RED)
+     A                                 16 19'Consider adding a few subjects in -
+     A                                      Add Course'
+     A                                 17 19'for the'
+     A                                 17 27'corresponding semester'
+     A                                      DSPATR(UL)
      A*%%RS+<record-sequences>
      A*%%RS+ <sequence name="Untitled">
      A*%%RS+  <device type="display" width="80" height="24" />
